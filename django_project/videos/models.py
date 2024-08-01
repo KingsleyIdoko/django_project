@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 # Create your models here.
 
 class Video(models.Model):
@@ -7,12 +8,14 @@ class Video(models.Model):
         PUBLISH = 'PU','Publish'
         DRAFT = 'DR','DRAFT'
 
-    title = models.CharField(max_length=50)
-    description = models.TextField(blank=True, null=True)
-    slug = models.SlugField(blank=True, null=True)
-    video_id = models.CharField(max_length=50)
-    active = models.BooleanField(default=True)
-    state = models.CharField(max_length=2, choices=VideoStateOptions.choices,default=VideoStateOptions.DRAFT)
+    title               = models.CharField(max_length=50)
+    description         = models.TextField(blank=True, null=True)
+    slug                = models.SlugField(blank=True, null=True)
+    video_id            = models.CharField(max_length=50, unique=True)
+    active              = models.BooleanField(default=True)
+    timestamp           = models.DateTimeField(auto_now_add=True)
+    updated             = models.DateTimeField(auto_now=True)
+    state               = models.CharField(max_length=2, choices=VideoStateOptions.choices,default=VideoStateOptions.DRAFT)
     published_timestamp = models.DateTimeField(auto_now_add=False, auto_now=False, blank=True, null=True)
 
     @property
@@ -27,6 +30,8 @@ class Video(models.Model):
             self.published_timestamp = timezone.now()
         elif self.state == self.VideoStateOptions.DRAFT:
             self.published_timestamp = None
+        if not self.slug:
+            self.slug = slugify(self.title)
         super().save(*args,**kwargs)
 
 class VideoAllProxy(Video):
