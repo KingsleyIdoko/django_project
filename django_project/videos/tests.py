@@ -4,6 +4,7 @@ from django.utils.text import slugify
 # Create your tests here.
 from .models import Video
 
+
 class VideoModelTestCase(TestCase):
 
     def setUp(self):
@@ -14,6 +15,7 @@ class VideoModelTestCase(TestCase):
         title = self.obj_a.title
         test_slug = slugify(title)
         self.assertEqual(test_slug, self.obj_a.slug)
+
     def test_validate_title(self):
         qs = Video.objects.filter(title="This is my first title")
         self.assertEqual(qs.exists(), 1)
@@ -31,4 +33,8 @@ class VideoModelTestCase(TestCase):
         qs = Video.objects.filter(state=Video.VideoStateOptions.PUBLISH,published_timestamp__lte=now)
         self.assertTrue(qs.exists())
 
+    def test_published_manager(self):
+        qs = Video.objects.all().published()
+        qs_2 = Video.objects.published()
+        self.assertTrue(qs.count(),qs_2.count())
     
