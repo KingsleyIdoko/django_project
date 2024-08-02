@@ -14,10 +14,6 @@ class VideoAllAdmin(admin.ModelAdmin):
     readonly_fields = ['id','is_published','published_timestamp']
     class Meta:
         model = VideoAllProxy
-    
-    # def published(self, obj, *args, **kwargs):
-    #     print(args, kwargs)
-    #     return obj.active
 
 class VideoProxyAdmin(admin.ModelAdmin):
     list_display = ['title','video_id']

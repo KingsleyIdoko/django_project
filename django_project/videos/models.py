@@ -1,12 +1,17 @@
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from django.db.models.signals import pre_save
 # Create your models here.
+
+class PublishedStateOptions(models.TextChoices):
+        PUBLISH = 'PU','Publish'
+        DRAFT   = 'DR','DRAFT'
 
 class VideoQuerySet(models.QuerySet):
     def published(self):
         now = timezone.now()
-        return self.filter(state=Video.VideoStateOptions.PUBLISH, published_timestamp__lte=now)
+        return self.filter(state=PublishedStateOptions.PUBLISH, published_timestamp__lte=now)
 
 class ModelManager(models.Manager):
     def get_queryset(self):
@@ -16,10 +21,6 @@ class ModelManager(models.Manager):
         return self.get_queryset().published()
 
 class Video(models.Model):
-    class VideoStateOptions(models.TextChoices):
-        PUBLISH = 'PU','Publish'
-        DRAFT = 'DR','DRAFT'
-
     title               = models.CharField(max_length=50)
     description         = models.TextField(blank=True, null=True)
     slug                = models.SlugField(blank=True, null=True)
@@ -27,7 +28,7 @@ class Video(models.Model):
     active              = models.BooleanField(default=True)
     timestamp           = models.DateTimeField(auto_now_add=True)
     updated             = models.DateTimeField(auto_now=True)
-    state               = models.CharField(max_length=2, choices=VideoStateOptions.choices,default=VideoStateOptions.DRAFT)
+    state               = models.CharField(max_length=2, choices=PublishedStateOptions.choices,default=PublishedStateOptions.DRAFT)
     published_timestamp = models.DateTimeField(auto_now_add=False, auto_now=False, blank=True, null=True)
 
     objects = ModelManager()
@@ -38,15 +39,7 @@ class Video(models.Model):
     
     def __str__(self):
         return self.title[:20]
-    
-    def save(self,*args, **kwargs):
-        if self.state == self.VideoStateOptions.PUBLISH and self.published_timestamp is None:
-            self.published_timestamp = timezone.now()
-        elif self.state == self.VideoStateOptions.DRAFT:
-            self.published_timestamp = None
-        if not self.slug:
-            self.slug = slugify(self.title)
-        super().save(*args,**kwargs)
+
 
 class VideoAllProxy(Video):
     class Meta:
@@ -59,3 +52,18 @@ class VideoPublishedProxy(Video):
         proxy = True
         verbose_name = 'Published Video'
         verbose_name_plural = 'Published Videos'
+
+def published_state_pref_save(sender, instance, *args, **kwargs):
+    is_publish = instance.state == PublishedStateOptions.PUBLISH 
+    is_draft = instance.state == PublishedStateOptions.DRAFT
+    if is_publish and instance.published_timestamp is None:
+        instance.published_timestamp = timezone.now()
+    elif is_draft:
+        instance.published_timestamp = None
+pre_save.connect(published_state_pref_save, sender=Video)
+
+
+def slugify_pre_save(sender, instance, *args,**kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.title)
+pre_save.connect(slugify_pre_save, sender=Video)
