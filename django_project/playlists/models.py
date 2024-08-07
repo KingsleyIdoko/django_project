@@ -19,11 +19,13 @@ class PlaylistManager(models.Manager):
         return self.get_queryset().published()
 
 class Playlist(models.Model):
+    parent              = models.ForeignKey("self", null=True, on_delete=models.SET_NULL)
+    order               = models.IntegerField(default=1)
     title               = models.CharField(max_length=50)
     description         = models.TextField(blank=True, null=True)
     slug                = models.SlugField(blank=True, null=True)
     video               = models.ForeignKey(Video, null=True, related_name='featured_published',on_delete=models.SET_NULL)
-    videos              = models.ManyToManyField(Video,related_name="playlist_items", blank=True)
+    videos              = models.ManyToManyField(Video,related_name="playlist_items", blank=True, through='PlaylistItem')
     active              = models.BooleanField(default=True)
     timestamp           = models.DateTimeField(auto_now_add=True)
     updated             = models.DateTimeField(auto_now=True)
@@ -43,3 +45,13 @@ class Playlist(models.Model):
 pre_save.connect(published_state_pref_save, sender=Playlist)
 
 pre_save.connect(slugify_pre_save, sender=Playlist)
+
+
+class PlaylistItem(models.Model):
+    playlist            = models.ForeignKey(Playlist, on_delete=models.CASCADE)
+    video               = models.ForeignKey(Video, on_delete=models.CASCADE)
+    order               = models.IntegerField(default=1)
+    timestamp           = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order','-timestamp']

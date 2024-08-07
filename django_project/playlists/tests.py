@@ -12,15 +12,21 @@ class PlaylistModelTestCase(TestCase):
         self.video_a    = video_a
         self.video_b    = video_b
         self.video_c    = video_c
+        self.video_qs   = Video.objects.all()
 
     def setUp(self):
         self.create_videos()
         self.obj_a = Playlist.objects.create(title="This is my first title",video=self.video_a)
-        obj_b = Playlist.objects.create(title="This is my 2nd title",
-                                    state=PublishedStateOptions.PUBLISH,video=self.video_a)
-        obj_b.set(videos=[self.video_a,self.video_b,self.video_c])
+        obj_b = Playlist.objects.create(title="This is my 2nd title",state=PublishedStateOptions.PUBLISH,video=self.video_a)
+        obj_b.videos.set(self.video_qs)
         obj_b.save()
         self.obj_b = obj_b
+
+    def test_playlist_video_through_model(self):
+        v_qs = sorted(list(self.video_qs.values_list("id")))
+        video_qs = sorted(list(self.obj_b.videos.all().values_list('id')))
+        playlistItem_qs =  sorted(list(self.obj_b.playlistitem_set.all().values_list('video')))
+        self.assertEqual(v_qs,video_qs,playlistItem_qs)
 
     def test_video_playlist(self):
         qs = self.video_a.featured_published.all()
