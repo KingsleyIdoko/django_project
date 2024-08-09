@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.db.models.query import QuerySet
 from django.http import HttpRequest
 
+
 # Register your models here.
 from .models import Video, VideoPublishedProxy, VideoAllProxy
 
@@ -23,8 +24,8 @@ class VideoProxyAdmin(admin.ModelAdmin):
     class Meta:
         model = VideoPublishedProxy
 
-    def get_queryset(self, request):
-        return VideoPublishedProxy.objects.filter(active=True)
+    # def get_queryset(self, request):
+    #     return VideoPublishedProxy.objects.filter(active=True)
 
 
 admin.site.register(VideoPublishedProxy,VideoProxyAdmin)

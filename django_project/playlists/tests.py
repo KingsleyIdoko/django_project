@@ -5,6 +5,7 @@ from .models import Playlist,PublishedStateOptions
 from videos.models import Video
 
 class PlaylistModelTestCase(TestCase):
+    
     def create_videos(self):
         video_a         = Video.objects.create(title="This is my first title",video_id="abc4321")
         video_b         = Video.objects.create(title="This is my first title",video_id="abc4322")
@@ -14,13 +15,27 @@ class PlaylistModelTestCase(TestCase):
         self.video_c    = video_c
         self.video_qs   = Video.objects.all()
 
+    def create_show_with_seasons(self):
+        the_office  = Playlist.objects.create(title='The Office Series')
+        season_1    = Playlist.objects.create(parent=the_office,title='The Office Series Season 1',order=1)
+        season_2    = Playlist.objects.create(parent=the_office,title='The Office Series Season 2',order=1)
+        season_3    = Playlist.objects.create(parent=the_office,title='The Office Series Season 3',order=1)
+        shows       = Playlist.objects.filter(parent__isnull=True)
+        self.show   = the_office
+
     def setUp(self):
         self.create_videos()
+        self.create_show_with_seasons()
         self.obj_a = Playlist.objects.create(title="This is my first title",video=self.video_a)
         obj_b = Playlist.objects.create(title="This is my 2nd title",state=PublishedStateOptions.PUBLISH,video=self.video_a)
         obj_b.videos.set(self.video_qs)
         obj_b.save()
         self.obj_b = obj_b
+
+    def test_show_has_seasons(self):
+        seasons  = self.show.playlist_set.all()
+        self.assertTrue(seasons.exists())
+        self.assertEqual(seasons.count(),3)
 
     def test_playlist_video_through_model(self):
         v_qs = sorted(list(self.video_qs.values_list("id")))
@@ -51,11 +66,11 @@ class PlaylistModelTestCase(TestCase):
 
     def test_Playlist_count(self):
         qs = Playlist.objects.all()
-        self.assertEqual(qs.count(), 2)
+        self.assertEqual(qs.count(), 6)
 
     def test_draft_case(self):
         qs = Playlist.objects.filter(state=PublishedStateOptions.DRAFT)
-        self.assertEqual(qs.count(),1)
+        self.assertEqual(qs.count(),5)
 
     def test_publish_case(self):
         now = timezone.now()

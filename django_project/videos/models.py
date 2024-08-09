@@ -53,6 +53,11 @@ class VideoPublishedProxy(Video):
         verbose_name = 'Published Video'
         verbose_name_plural = 'Published Videos'
 
+    @classmethod
+    def published(self):
+            return self.objects.filter(state=PublishedStateOptions.PUBLISH, published_timestamp__lte=timezone.now())
+
+
 pre_save.connect(published_state_pref_save, sender=Video)
 
 pre_save.connect(slugify_pre_save, sender=Video)
